@@ -1,152 +1,158 @@
 import streamlit as st
 from datetime import datetime, timedelta
+import time
 
 # --- Page Configuration ---
 st.set_page_config(page_title="Global Trichology", page_icon="🔬", layout="wide")
 
-# --- Custom CSS for Theme (Navy Blue, Light Blue, White) ---
+# --- CUSTOM THEME (Navy, Light Blue, White) ---
 st.markdown("""
     <style>
-    /* Main Background */
-    .stApp {
-        background-color: #FFFFFF;
-    }
-    /* Headers */
-    h1, h2, h3, h4, h5, h6 {
-        color: #000080 !important; /* Navy Blue */
-    }
-    /* Sidebar */
-    [data-testid="stSidebar"] {
-        background-color: #ADD8E6; /* Light Blue */
-    }
-    [data-testid="stSidebar"] * {
-        color: #000080 !important;
-    }
-    /* Buttons */
+    .stApp { background-color: #FFFFFF; }
+    [data-testid="stSidebar"] { background-color: #000080; }
+    [data-testid="stSidebar"] * { color: #FFFFFF !important; }
+    h1, h2, h3 { color: #000080 !important; font-family: 'Helvetica Neue', sans-serif; }
     .stButton>button {
         background-color: #000080;
         color: #FFFFFF !important;
-        border: none;
-        border-radius: 5px;
-        padding: 10px 24px;
+        border-radius: 20px;
+        border: 2px solid #ADD8E6;
     }
-    .stButton>button:hover {
-        background-color: #ADD8E6;
-        color: #000080 !important;
-        border: 1px solid #000080;
-    }
-    /* Info/Alert boxes */
-    .stAlert {
-        background-color: #ADD8E6;
-        color: #000080;
+    .main-box {
+        background-color: #f0f4f8;
+        padding: 20px;
+        border-radius: 15px;
+        border-left: 5px solid #ADD8E6;
+        margin-bottom: 20px;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# --- Session State Initialization ---
+# --- SESSION STATE INITIALIZATION ---
+if 'current_page' not in st.session_state:
+    st.session_state.current_page = "Home"
 if 'completed_lessons' not in st.session_state:
     st.session_state.completed_lessons = 0
-if 'active_lesson' not in st.session_state:
-    st.session_state.active_lesson = 1
 if 'lesson_start_time' not in st.session_state:
-    st.session_state.lesson_start_time = datetime.now()
+    st.session_state.lesson_start_time = None
 
-# --- Mock Lesson Data ---
-lesson_plan = {
-    1: {"title": "Anatomy of Hair and Scalp", "topic": "Hair Follicle Structure"},
-    2: {"title": "Hair Growth Cycles", "topic": "Anagen, Catagen, Telogen Phases"},
-    3: {"title": "Common Scalp Conditions", "topic": "Dandruff, Psoriasis, Seborrheic Dermatitis"},
-    4: {"title": "Types of Hair Loss (Alopecia)", "topic": "Androgenetic Alopecia & Alopecia Areata"},
-    5: {"title": "Nutrition and Hair Health", "topic": "Vitamins, Minerals, and Diet"},
-    6: {"title": "Chemical Damage & Repair", "topic": "pH Levels and Structural Integrity"},
-    7: {"title": "Consultation and Analysis", "topic": "Microscopic Scalp Evaluations"},
-    8: {"title": "Holistic Trichology Treatments", "topic": "Essential Oils and Scalp Massage"},
-    9: {"title": "Clinical Treatments and Modalities", "topic": "Low-Level Laser Therapy (LLLT)"},
-    10: {"title": "Business of Trichology", "topic": "Ethics, State Laws, and Client Management"}
-}
+# --- CONSTANTS ---
+LOGO_URL = "http://googleusercontent.com/image_collection/image_retrieval/598258075546678371"
+TEST_PREP_IMG = "http://googleusercontent.com/image_collection/image_retrieval/1218677147972910425"
+CONTINUED_ED_IMG = "http://googleusercontent.com/image_collection/image_retrieval/12797348955438761267"
+CAREER_ADV_IMG = "http://googleusercontent.com/image_collection/image_retrieval/4169267514374572343"
+REQUIRED_SECONDS = 3600 # 1 Hour
 
-# --- Timer Logic ---
-# Set to 3600 seconds (1 hour) for production. 
-# Change to 10 seconds right now if you want to test the app quickly.
-REQUIRED_SECONDS = 3600  
-
-def check_timer():
-    elapsed = datetime.now() - st.session_state.lesson_start_time
-    return elapsed.total_seconds() >= REQUIRED_SECONDS
-
-def advance_lesson():
-    st.session_state.completed_lessons += 1
-    st.session_state.active_lesson += 1
-    st.session_state.lesson_start_time = datetime.now() # Reset timer for the next lesson
-
-# --- Sidebar Navigation ---
-st.sidebar.image("https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Blank_square.svg/120px-Blank_square.svg.png", width=50) # Placeholder for your logo
-st.sidebar.title("Global Trichology")
-st.sidebar.markdown("---")
-st.sidebar.subheader("Course Progress")
-progress_bar = st.sidebar.progress(st.session_state.completed_lessons / 10)
-st.sidebar.write(f"**Lessons Completed:** {st.session_state.completed_lessons} / 10")
-
-st.sidebar.markdown("---")
-if st.sidebar.button("Reset Progress (Dev Tool)"):
-    st.session_state.clear()
-    st.rerun()
-
-# --- Main Interface ---
-st.title("Global Trichology Certification")
-
-if st.session_state.active_lesson <= 10:
-    current = lesson_plan[st.session_state.active_lesson]
+# --- SIDEBAR NAVIGATION ---
+with st.sidebar:
+    st.image(LOGO_URL, width=150)
+    st.title("Navigation")
+    selection = st.radio("Go to:", ["Home", "Lesson Plan", "Test Prep", "FAQ", "Support"])
+    st.session_state.current_page = selection
     
-    st.header(f"Lesson {st.session_state.active_lesson}: {current['title']}")
-    
-    # State compliance timer display
-    elapsed_time = datetime.now() - st.session_state.lesson_start_time
-    remaining_time = max(0, REQUIRED_SECONDS - int(elapsed_time.total_seconds()))
-    
-    if remaining_time > 0:
-        minutes, seconds = divmod(remaining_time, 60)
-        st.warning(f"⏳ **State Requirement Timer:** You must study this material for {minutes}m {seconds}s more before taking the quiz.")
-    else:
-        st.success("✅ **Timer Complete:** You may now submit the quiz to advance.")
+    st.markdown("---")
+    st.write(f"**Progress:** {st.session_state.completed_lessons}/10 Lessons")
+    st.progress(st.session_state.completed_lessons / 10)
 
-    # Tabs for Study Guide and Quiz
-    tab1, tab2 = st.tabs(["📖 Study Guide", "📝 Lesson Quiz"])
-
-    with tab1:
-        st.subheader(f"Topic: {current['topic']}")
+# --- PAGE: HOME ---
+if st.session_state.current_page == "Home":
+    col1, col2 = st.columns([1, 2])
+    with col1:
+        st.image(LOGO_URL, use_column_width=True)
+    with col2:
+        st.title("Welcome to Global Trichology")
+        st.subheader("Professional Medical & Educational Certification")
         st.write("""
-        *Welcome to this lesson.* Please review the following study materials thoroughly. State board requirements mandate that you spend a minimum of 60 minutes reviewing this module. Ensure you understand the cellular functions and clinical manifestations outlined below.
-        
-        **Study Materials:**
-        - Reading Chapter: [Insert text here]
-        - Video Lecture: [Insert embedded video link here]
-        - Vocabulary Review: [Insert terms here]
+            Global Trichology is a premier paid platform dedicated to the science of hair and scalp health. 
+            Our comprehensive 10-lesson course is designed to meet strict state requirements, 
+            providing a blend of medical knowledge and clinical practice to prepare you for global licensure.
         """)
-        
-    with tab2:
-        st.subheader("Knowledge Check")
-        st.write("Complete the quiz below to verify your understanding. You cannot submit until the state-mandated 1-hour timer has elapsed.")
-        
-        q1 = st.radio("1. What is the primary focus of this lesson?", ["Scalp Health", "Skin Care", "Nail Growth", "Bone Density"], index=None)
-        q2 = st.radio("2. True or False: You must complete 10 lessons for certification.", ["True", "False"], index=None)
-        
-        # Validation and Submission
-        if st.button("Submit Quiz & Advance"):
-            if not check_timer():
-                st.error("Wait! You have not met the 1-hour minimum study time required by state regulations.")
-            elif q1 is None or q2 is None:
-                st.error("Please answer all questions before submitting.")
-            else:
-                st.balloons()
-                advance_lesson()
-                st.rerun()
 
-elif st.session_state.active_lesson == 11:
-    st.header("🎓 Final Certification Exam")
-    st.success("Congratulations! You have completed the 10-hour state requirement. The final exam is now unlocked.")
-    st.write("This exam consists of 100 comprehensive questions covering Anatomy, Hair Loss, and Clinical Treatments.")
+    st.markdown("---")
     
-    st.info("The exam will open in a secure browser window. You must score an 80% or higher to receive your Global Trichology Certificate.")
-    if st.button("Begin Final Exam"):
-        st.write("*(Exam portal opens here...)*")
+    # Career Sections
+    c1, c2, c3 = st.columns(3)
+    
+    with c1:
+        st.image(TEST_PREP_IMG, caption="Success Starts Here")
+        st.subheader("Test Prep")
+        st.write("Master the curriculum with our focused exam strategies. We provide mock board exams, flashcards for anatomy, and case study reviews to ensure you are fully prepared for certification.")
+        
+    with c2:
+        st.image(CONTINUED_ED_IMG, caption="Keep Growing")
+        st.subheader("Continued Education")
+        st.write("Stay at the forefront of the industry. Our continued education modules offer advanced insights into microscopic scalp analysis, regenerative therapies, and the latest in laser technology.")
+        
+    with c3:
+        st.image(CAREER_ADV_IMG, caption="Build Your Practice")
+        st.subheader("Career Advancement")
+        st.write("Transform your knowledge into a thriving business. Learn clinic management, ethical marketing, and professional documentation to lead your own multidisciplinary hair health team.")
+
+# --- PAGE: LESSON PLAN ---
+elif st.session_state.current_page == "Lesson Plan":
+    st.title("Your Lesson Plan")
+    
+    lesson_num = st.session_state.completed_lessons + 1
+    
+    if lesson_num <= 10:
+        st.header(f"Current Module: Lesson {lesson_num}")
+        
+        # Timer Logic
+        if st.session_state.lesson_start_time is None:
+            if st.button("Start 1-Hour Study Session"):
+                st.session_state.lesson_start_time = datetime.now()
+                st.rerun()
+        else:
+            elapsed = datetime.now() - st.session_state.lesson_start_time
+            remaining = max(0, REQUIRED_SECONDS - int(elapsed.total_seconds()))
+            
+            if remaining > 0:
+                mins, secs = divmod(remaining, 60)
+                st.warning(f"⏳ State Requirement: {mins}m {secs}s remaining before you can take the quiz.")
+                time.sleep(1) # Simple refresh trigger
+                st.rerun()
+            else:
+                st.success("✅ Requirement met! You may now complete the Study Guide and Quiz.")
+                
+                with st.expander("📖 View Study Guide"):
+                    st.write("Detailed medical content for Lesson", lesson_num)
+                
+                if st.button("Take Quiz & Advance"):
+                    st.session_state.completed_lessons += 1
+                    st.session_state.lesson_start_time = None
+                    st.balloons()
+                    st.rerun()
+    else:
+        st.success("🎓 All lessons complete! Final Exam Unlocked in 'Test Prep' tab.")
+
+# --- PAGE: TEST PREP ---
+elif st.session_state.current_page == "Test Prep":
+    st.title("Test Prep & Final Exam")
+    st.image(TEST_PREP_IMG, width=400)
+    
+    if st.session_state.completed_lessons < 10:
+        st.info("The Final Test will be available here after all 10 lessons are completed.")
+        st.subheader("Practice Resources")
+        st.write("- Anatomy Flashcards\n- Scalp Condition Image Database\n- Nutrition Quick-Guides")
+    else:
+        st.header("🏆 Final Certification Exam")
+        st.write("You have met the 10-hour state requirement. You may now begin your final evaluation.")
+        if st.button("Launch Final Exam"):
+            st.write("Final Exam Portal Initializing...")
+
+# --- PAGE: FAQ ---
+elif st.session_state.current_page == "FAQ":
+    st.title("Frequently Asked Questions")
+    with st.expander("Why is there a 1-hour timer?"):
+        st.write("To meet state board licensing requirements, students must document 1 hour of active study per lesson.")
+    with st.expander("Can I take longer than an hour?"):
+        st.write("Yes! You can take as long as you need to master the material, but you cannot advance sooner than 60 minutes.")
+
+# --- PAGE: SUPPORT ---
+elif st.session_state.current_page == "Support":
+    st.title("Student Support")
+    st.write("Need help with the platform or course material? Contact our clinical instructors.")
+    st.text_input("Subject")
+    st.text_area("Message")
+    if st.button("Send Request"):
+        st.success("Support ticket created. We will respond within 24 hours.")
